@@ -1,3 +1,9 @@
 # try-conftest
 
-@see https://febc-yamamoto.hatenablog.jp/entry/2019/06/11/221017
+```
+$ export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/credential.json
+$ terraform init
+$ terraform plan --out tfplan.binary
+$ terraform show -json tfplan.binary > tfplan.json
+$ opa eval --format pretty --data terraform.rego --input tfplan.json "data.terraform.analysis.authz"
+```
