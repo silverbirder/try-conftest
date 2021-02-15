@@ -1,43 +1,57 @@
-resource "google_service_account" "default" {
-  account_id   = "silverbirder"
-  display_name = "Service Account"
+provider "google" {
+  version = "2.5.0"
+  project = "instrumenta"
+  region = "europe-west2"
 }
 
-resource "google_compute_instance" "default" {
-  name         = "test"
-  machine_type = "e2-medium"
-  zone         = "us-central1-a"
+resource "google_container_cluster" "primary" {
+  name     = "my-gke-cluster"
+  location = "us-central1"
 
-  tags = ["foo", "bar"]
+  # We can't create a cluster with no node pool defined, but we want to only use
+  # separately managed node pools. So we create the smallest possible default
+  # node pool and immediately delete it.
+  remove_default_node_pool = true
+  initial_node_count = 1
 
-  boot_disk {
-    initialize_params {
-      image = "debian-cloud/debian-9"
+  # Setting an empty username and password explicitly disables basic auth
+  master_auth {
+    username = ""
+    password = ""
+  }
+}
+
+resource "google_container_node_pool" "primary_preemptible_nodes" {
+  name       = "my-node-pool"
+  location   = "us-central1"
+  cluster    = "${google_container_cluster.primary.name}"
+  node_count = 1
+
+  node_config {
+    preemptible  = true
+    machine_type = "n1-standard-1"
+
+    metadata = {
+      disable-legacy-endpoints = "true"
     }
+
+    oauth_scopes = [
+      "https://www.googleapis.com/auth/logging.write",
+      "https://www.googleapis.com/auth/monitoring",
+    ]
   }
+}
 
-  // Local SSD disk
-  scratch_disk {
-    interface = "SCSI"
-  }
+# The following outputs allow authentication and connectivity to the GKE Cluster
+# by using certificate-based authentication.
+output "client_certificate" {
+  value = "${google_container_cluster.primary.master_auth.0.client_certificate}"
+}
 
-  network_interface {
-    network = "default"
+output "client_key" {
+  value = "${google_container_cluster.primary.master_auth.0.client_key}"
+}
 
-    access_config {
-      // Ephemeral IP
-    }
-  }
-
-  metadata = {
-    foo = "bar"
-  }
-
-  metadata_startup_script = "echo hi > /test.txt"
-
-  service_account {
-    # Google recommends custom service accounts that have cloud-platform scope and permissions granted via IAM Roles.
-    email  = google_service_account.default.email
-    scopes = ["cloud-platform"]
-  }
+output "cluster_ca_certificate" {
+  value = "${google_container_cluster.primary.master_auth.0.cluster_ca_certificate}"
 }
