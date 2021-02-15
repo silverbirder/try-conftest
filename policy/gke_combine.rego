@@ -7,5 +7,5 @@ deny[msg] {
 }
 
 instrumenta_project_exists {
-    input[_].contents.provider[0].google[0].project == "instrumenta"
+    input.configuration.provider_config.google.expressions.project.constant_value == "instrumenta"
 }

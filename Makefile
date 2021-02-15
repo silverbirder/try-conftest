@@ -19,7 +19,7 @@ $(SHOW): plan
 	$(COMMAND) show -json $(PLAN) > $(SHOW)
 
 test: show
-	cat $(SHOW) | conftest test -
+	cat $(SHOW) | conftest test --all-namespaces -
 
 clean:
 	@rm -f $(PLAN) $(SHOW)

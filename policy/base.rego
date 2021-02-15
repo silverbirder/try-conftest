@@ -2,7 +2,7 @@ package main
 
 denylist = [
   "google_iam",
-  "google_container"
+  # "google_container"
 ]
 
 deny[msg] {
